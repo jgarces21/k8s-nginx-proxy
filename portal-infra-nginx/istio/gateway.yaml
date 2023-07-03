@@ -1,0 +1,28 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: "external-gateway-#{DEPLOYMENT_SUFFIX}#"
+  namespace: "#{DEPLOYMENT_NAMESPACE}#"
+spec:
+  selector:
+    istio: "ingressgateway-#{DEPLOYMENT_SUFFIX}#" # use istio default controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP2
+    hosts:
+      - "#{SUB_DOMAIN_NAME_PORTAL}#.eastus.cloudapp.azure.com"
+      - "#{SUB_DOMAIN_NAME_PORTAL}#.domain.com"
+      - "#{PORTAL_ALTERNATE_DOMAIN}#"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: "external-certificate-#{DEPLOYMENT_SUFFIX}#"
+    hosts:
+      - "#{SUB_DOMAIN_NAME_PORTAL}#.eastus.cloudapp.azure.com"
+      - "#{SUB_DOMAIN_NAME_PORTAL}#.domain.com"
+      - "#{PORTAL_ALTERNATE_DOMAIN}#"

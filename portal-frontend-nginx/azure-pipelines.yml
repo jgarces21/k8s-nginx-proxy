@@ -1,0 +1,138 @@
+trigger:
+  - "*"
+variables:
+  npm_config_cache: $(Pipeline.Workspace)/.npm
+
+stages:
+
+  - stage: "Build"
+    displayName: "Build"
+    jobs:
+      - job: "Build"
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - task: DockerInstaller@0
+            inputs:
+              dockerVersion: "17.09.0-ce"
+          - task: Docker@2
+            inputs:
+              containerRegistry: "DevOpsRegistry"
+              repository: "cd/lab/portal-frontend-nginx"
+              command: "buildAndPush"
+              Dockerfile: "**/Dockerfile"
+              tags: |
+                $(Build.BuildId)
+                production
+                latest
+
+  - stage: "Deploy_DEV"
+    dependsOn: "Build"
+    displayName: "Deploy Development"
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    variables:
+      - name: SUBDOMAIN
+        value: bpglobaldev
+      - group: PORTAL_DEV
+    jobs:
+      - deployment: labsportalng
+        environment:
+          name: Desarrollo
+          resourceType: Kubernetes
+        pool:
+          vmImage: "ubuntu-latest"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - download: none
+                - task: replacetokens@3
+                  inputs:
+                    targetFiles: "k8s.yaml"
+                    encoding: "auto"
+                    writeBOM: true
+                    actionOnMissing: "fail"
+                    keepToken: false
+                    tokenPrefix: "#{"
+                    tokenSuffix: "}#"
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: "deploy"
+                    kubernetesServiceConnection: "Desarrollo-k8s-desarrollo-global-portal-1633993102877"
+                    namespace: "portal"
+                    manifests: "k8s.yaml"
+
+  - stage: "Deploy_TEST"
+    dependsOn: "Build"
+    displayName: "Deploy Test"
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/test'))
+    variables:
+      - name: SUBDOMAIN
+        value: bpglobaltest
+      - group: PORTAL_TEST
+    jobs:
+      - deployment: labsportalng
+        environment:
+          name: Test
+          resourceType: Kubernetes
+        pool:
+          vmImage: "ubuntu-latest"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - download: none
+                - task: replacetokens@3
+                  inputs:
+                    targetFiles: "k8s.yaml"
+                    encoding: "auto"
+                    writeBOM: true
+                    actionOnMissing: "fail"
+                    keepToken: false
+                    tokenPrefix: "#{"
+                    tokenSuffix: "}#"
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: "deploy"
+                    kubernetesServiceConnection: "Test-k8s-test-global-portal-1633993674939"
+                    namespace: "portal"
+                    manifests: "k8s.yaml"
+
+  - stage: "Deploy_PROD"
+    dependsOn: "Build"
+    displayName: "Deploy Prod"
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    variables:
+      - name: SUBDOMAIN
+        value: bpglobalprod
+      - group: PORTAL_PROD
+    jobs:
+      - deployment: labsportalng
+        environment:
+          name: Produccion
+          resourceType: Kubernetes
+        pool:
+          vmImage: "ubuntu-latest"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - download: none
+                - task: replacetokens@3
+                  inputs:
+                    targetFiles: "k8s.yaml"
+                    encoding: "auto"
+                    writeBOM: true
+                    actionOnMissing: "fail"
+                    keepToken: false
+                    tokenPrefix: "#{"
+                    tokenSuffix: "}#"
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: "deploy"
+                    kubernetesServiceConnection: "Produccion-k8s-prod-global-portal-1633993722162"
+                    namespace: "portal"
+                    manifests: "k8s.yaml"

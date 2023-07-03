@@ -1,0 +1,95 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: #{DEPLOYMENT_SUFFIX}#-virtual-service
+  namespace: "#{DEPLOYMENT_NAMESPACE}#"
+spec:
+  hosts:
+    - "#{SUB_DOMAIN_NAME_PORTAL}#.eastus.cloudapp.azure.com"
+    - "#{SUB_DOMAIN_NAME_PORTAL}#.domain.com"
+    - "#{PORTAL_ALTERNATE_DOMAIN}#"
+  gateways:
+    - "#{DEPLOYMENT_NAMESPACE}#/external-gateway-#{DEPLOYMENT_SUFFIX}#"
+  http:
+    - match:
+      - uri:
+          prefix: /.well-known/acme-challenge
+      route:
+      - destination:
+          host: acme-certficate-solver
+          port:
+            number: 8090
+    - match:
+        - uri:
+            exact: /
+      headers:
+        response:
+          set:
+            Location: 'https://#{PORTAL_DOMAIN_REDIRECT}#/portal'
+      redirect:
+        redirectCode: 307
+        authority: 'https://#{PORTAL_DOMAIN_REDIRECT}#'
+    - match:
+      - uri:
+          prefix: /
+      route:
+      - destination:
+          host: portal-frontend-nginx
+          subset: v1-1
+          port:
+            number: 80
+        weight: 34
+      - destination:
+          host: portal-frontend-nginx
+          subset: v1-2
+          port:
+            number: 80
+        weight: 33
+      - destination:
+          host: portal-frontend-nginx
+          subset: v1-3
+          port:
+            number: 80
+        weight: 33
+    - match:
+      - uri:
+          exact: /status
+      rewrite:
+        uri: /404
+      route:
+        - destination:
+            host: portal-frontend-nginx
+            subset: v1-1
+            port:
+              number: 80
+          weight: 34
+        - destination:
+            host: portal-frontend-nginx
+            subset: v1-2
+            port:
+              number: 80
+          weight: 33
+        - destination:
+            host: portal-frontend-nginx
+            subset: v1-3
+            port:
+              number: 80
+          weight: 33
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: #{DEPLOYMENT_SUFFIX}#-destination-rule
+  namespace: "#{DEPLOYMENT_NAMESPACE}#"
+spec:
+  host: portal-frontend-nginx
+  subsets:
+    - name: v1-1
+      labels:
+        version: v1_1
+    - name: v1-2
+      labels:
+        version: v1_2
+    - name: v1-3
+      labels:
+        version: v1_3

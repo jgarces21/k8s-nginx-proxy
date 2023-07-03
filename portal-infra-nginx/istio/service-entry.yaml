@@ -1,0 +1,45 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: portal-backend-1
+  namespace: "#{DEPLOYMENT_NAMESPACE}#"
+spec:
+  hosts:
+    - bp-portal-info-prod1.eastus.cloudapp.azure.com
+  ports:
+    - number: 80
+      name: http
+      protocol: HTTP
+  resolution: DNS
+#  location: MESH_EXTERNAL
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: portal-backend-2
+  namespace: "#{DEPLOYMENT_NAMESPACE}#"
+spec:
+  hosts:
+    - bp-portal-info-prod2.eastus.cloudapp.azure.com
+  ports:
+    - number: 80
+      name: http
+      protocol: HTTP
+  resolution: DNS
+#  location: MESH_EXTERNAL
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: portal-backend-3
+  namespace: "#{DEPLOYMENT_NAMESPACE}#"
+spec:
+  hosts:
+    - bp-portal-info-prod3.eastus.cloudapp.azure.com
+  ports:
+    - number: 80
+      name: http
+      protocol: HTTP
+  resolution: DNS
+#  location: MESH_EXTERNAL

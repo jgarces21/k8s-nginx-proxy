@@ -1,0 +1,150 @@
+trigger:
+- '*'
+pool:
+  vmImage: 'ubuntu-latest'
+variables:
+  - group: AZURE
+  - group: AZURE_DEVOPS
+  - name: DEPLOYMENT_NAMESPACE
+    value: "portal"
+stages:
+  - stage: 'Deploy_DEV'
+    displayName: 'Deploy Development'
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+    variables:
+    - name: 'SUB_DOMAIN_NAME_PORTAL'
+      value: 'bp-portal-nginx-des'
+    - name: 'DEPLOYMENT_SUFFIX'
+      value: 'portal-nginx'
+    - group: PORTAL_DEV
+    jobs:
+    - deployment: secrets
+      environment:
+        name: Desarrollo
+        resourceType: Kubernetes
+        tags: "aks"
+      pool:
+        vmImage: 'ubuntu-latest'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+            - download: none
+            - task: replacetokens@3
+              displayName: Inject Secrets
+              inputs:
+                targetFiles: '**/*.yaml'
+                encoding: 'auto'
+                writeBOM: true
+                actionOnMissing: 'log warning'
+                keepToken: false
+                tokenPrefix: '#{'
+                tokenSuffix: '}#'
+            - task: KubernetesManifest@0
+              displayName: Install App Secrets
+              inputs:
+                action: 'deploy'
+                kubernetesServiceConnection: 'Desarrollo-k8s-desarrollo-global-portal-1633993102877'
+                namespace: 'portal'
+                manifests: |
+                  istio/ingress.yaml
+                  istio/gateway.yaml
+                  istio/service-entry.yaml
+                  istio/virtual-service.yaml
+                  istio/https.issuer.yaml
+                  istio/certificate.yaml
+
+  - stage: 'Deploy_TEST'
+    displayName: 'Deploy TEST'
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/test')
+    variables:
+    - name: 'SUB_DOMAIN_NAME_PORTAL'
+      value: 'bp-portal-nginx-test'
+    - name: 'DEPLOYMENT_SUFFIX'
+      value: 'portal-nginx'
+    - group: PORTAL_TEST
+    jobs:
+    - deployment: secrets
+      environment:
+        name: Test
+        resourceType: Kubernetes
+        tags: "aks"
+      pool:
+        vmImage: 'ubuntu-latest'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+            - download: none
+            - task: replacetokens@3
+              displayName: Inject Secrets
+              inputs:
+                targetFiles: '**/*.yaml'
+                encoding: 'auto'
+                writeBOM: true
+                actionOnMissing: 'log warning'
+                keepToken: false
+                tokenPrefix: '#{'
+                tokenSuffix: '}#'
+            - task: KubernetesManifest@0
+              displayName: Install App Secrets
+              inputs:
+                action: 'deploy'
+                kubernetesServiceConnection: 'Test-k8s-test-global-portal-1633993674939'
+                namespace: 'portal'
+                manifests: |
+                  istio/ingress.yaml
+                  istio/gateway.yaml
+                  istio/service-entry.yaml
+                  istio/virtual-service.yaml
+                  istio/https.issuer.yaml
+                  istio/certificate.yaml
+
+  - stage: 'Deploy_PROD'
+    displayName: 'Deploy PROD'
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
+    variables:
+    - name: 'SUB_DOMAIN_NAME_PORTAL'
+      value: 'bp-portal-nginx-prod'
+    - name: 'DEPLOYMENT_SUFFIX'
+      value: 'portal-nginx'
+    - group: PORTAL_PROD
+    jobs:
+    - deployment: secrets
+      environment:
+        name: Produccion
+        resourceType: Kubernetes
+        tags: "aks"
+      pool:
+        vmImage: 'ubuntu-latest'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+            - download: none
+            - task: replacetokens@3
+              displayName: Inject Secrets
+              inputs:
+                targetFiles: '**/*.yaml'
+                encoding: 'auto'
+                writeBOM: true
+                actionOnMissing: 'log warning'
+                keepToken: false
+                tokenPrefix: '#{'
+                tokenSuffix: '}#'
+            - task: KubernetesManifest@0
+              displayName: Install App Secrets
+              inputs:
+                action: 'deploy'
+                kubernetesServiceConnection: 'Produccion-k8s-prod-global-portal-1633993722162'
+                namespace: 'portal'
+                manifests: |
+                  istio/ingress.yaml
+                  istio/gateway.yaml
+                  istio/service-entry.yaml
+                  istio/virtual-service.yaml
+                  istio/https.issuer.yaml
+                  istio/certificate.yaml

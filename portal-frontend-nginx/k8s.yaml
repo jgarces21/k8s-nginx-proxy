@@ -1,0 +1,311 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: portal-frontend-nginx
+  namespace: portal
+  labels:
+    account: portal-frontend-nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-frontend-nginx-v1-1
+  namespace: portal
+  labels:
+    app: portal-frontend-nginx
+    version: v1_1
+spec:
+  replicas: #{PORTAL_MIN_REPLICAS}#
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: portal-frontend-nginx
+      version: v1_1
+  template:
+    metadata:
+      labels:
+        app: portal-frontend-nginx
+        version: v1_1
+    spec:
+      serviceAccountName: portal-frontend-nginx
+      containers:
+        - name: portal-frontend-nginx
+          image: domain.azurecr.io/cd/lab/portal-frontend-nginx:#{Build.BuildId}#
+          imagePullPolicy: Always
+          env:
+            - name: PORTAL_HOST
+              value: "#{PORTAL_HOST}#"
+            - name: PORTAL_BACKEND
+              value: "#{PORTAL_BACKEND_1}#"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /portal/keepalive.aspx
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /portal/keepalive.aspx
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          securityContext:
+            runAsUser: 101
+            runAsGroup: 101
+            runAsNonRoot: true
+      imagePullSecrets:
+        - name: azure
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-frontend-nginx-v1-2
+  namespace: portal
+  labels:
+    app: portal-frontend-nginx
+    version: v1_2
+spec:
+  replicas: #{PORTAL_MIN_REPLICAS}#
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: portal-frontend-nginx
+      version: v1_2
+  template:
+    metadata:
+      labels:
+        app: portal-frontend-nginx
+        version: v1_2
+    spec:
+      serviceAccountName: portal-frontend-nginx
+      containers:
+        - name: portal-frontend-nginx
+          image: domain.azurecr.io/cd/lab/portal-frontend-nginx:#{Build.BuildId}#
+          imagePullPolicy: Always
+          env:
+            - name: PORTAL_HOST
+              value: "#{PORTAL_HOST}#"
+            - name: PORTAL_BACKEND
+              value: "#{PORTAL_BACKEND_2}#"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /portal/keepalive.aspx
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /portal/keepalive.aspx
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          securityContext:
+            runAsUser: 101
+            runAsGroup: 101
+            runAsNonRoot: true
+      imagePullSecrets:
+        - name: azure
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-frontend-nginx-v1-3
+  namespace: portal
+  labels:
+    app: portal-frontend-nginx
+    version: v1_3
+spec:
+  replicas: #{PORTAL_MIN_REPLICAS}#
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: portal-frontend-nginx
+      version: v1_3
+  template:
+    metadata:
+      labels:
+        app: portal-frontend-nginx
+        version: v1_3
+    spec:
+      serviceAccountName: portal-frontend-nginx
+      containers:
+        - name: portal-frontend-nginx
+          image: domain.azurecr.io/cd/lab/portal-frontend-nginx:#{Build.BuildId}#
+          imagePullPolicy: Always
+          env:
+            - name: PORTAL_HOST
+              value: "#{PORTAL_HOST}#"
+            - name: PORTAL_BACKEND
+              value: "#{PORTAL_BACKEND_3}#"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /portal/keepalive.aspx
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /portal/keepalive.aspx
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          securityContext:
+            runAsUser: 101
+            runAsGroup: 101
+            runAsNonRoot: true
+      imagePullSecrets:
+        - name: azure
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portal-frontend-nginx
+  namespace: portal
+  labels:
+    app: portal-frontend-nginx
+    service: portal-frontend-nginx
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: http
+  selector:
+    app: portal-frontend-nginx
+
+# For autoscaling --- begin
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: portal-frontend-nginx-v1-1
+  namespace: portal
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: portal-frontend-nginx-v1-1
+  minReplicas: #{PORTAL_MIN_REPLICAS}#
+  maxReplicas: #{PORTAL_MAX_REPLICAS}#
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: portal-frontend-nginx-v1-2
+  namespace: portal
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: portal-frontend-nginx-v1-2
+  minReplicas: #{PORTAL_MIN_REPLICAS}#
+  maxReplicas: #{PORTAL_MAX_REPLICAS}#
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: portal-frontend-nginx-v1-3
+  namespace: portal
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: portal-frontend-nginx-v1-3
+  minReplicas: #{PORTAL_MIN_REPLICAS}#
+  maxReplicas: #{PORTAL_MAX_REPLICAS}#
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+# For autoscaling --- end
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: portal-frontend-nginx-policy
+  namespace: portal
+spec:
+  selector:
+    matchLabels:
+      app: portal-frontend-nginx
+      version: v1
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: [
+                "cluster.local/ns/portal/sa/default"
+            ]
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: portal-frontend-nginx-ips-policy
+  namespace: portal
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway-portal-nginx
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            ipBlocks: [#{PORTAL_ACCESS_IPS}#]

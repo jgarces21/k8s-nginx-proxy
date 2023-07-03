@@ -1,0 +1,34 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-prod-istio
+  namespace: "#{DEPLOYMENT_NAMESPACE}#"
+spec:
+  acme:
+    email: user@domain.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - selector: {}
+      http01:
+        ingress:
+          class: istio
+          serviceType: ClusterIP
+          podTemplate:
+            metadata:
+              annotations:
+                sidecar.istio.io/inject: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: acme-certficate-solver
+  namespace: "#{DEPLOYMENT_NAMESPACE}#"
+spec:
+  ports:
+  - port: 8090
+    targetPort: 8089
+  selector:
+    acme.cert-manager.io/http01-solver: "true"
